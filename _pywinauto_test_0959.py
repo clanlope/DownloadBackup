@@ -58,7 +58,7 @@ class BiliBili:
     def __init__(self):
         self.URL = "https://bilibili.com"
         self.UID = "445510184@qq.com"
-        self.PWD = input("请输入密码：")
+        # self.PWD = input("请输入密码：")
         reg_match = re.search(r'https:\/\/(.*)\.', self.URL).group(1)
         self.COOKIE_FILE = f"{reg_match}_cookies.json"
         self.LOGIN_SELECTOR = ".header-login-entry"
@@ -92,7 +92,7 @@ class BiliBili:
         print("Logging in with username and password...")
         page.locator(".header-login-entry").click()
         page.get_by_role("textbox", name="请输入账号").fill(self.UID)
-        page.get_by_role("textbox", name="请输入密码").fill(self.PWD)
+        page.get_by_role("textbox", name="请输入密码").fill(input("请输入密码："))
         page.click(".btn_primary")
         if self.is_logged_in(page):
             page.wait_for_timeout(1000)
@@ -131,10 +131,20 @@ def main():
     dlg.type_keys('^l')
     dlg.type_keys(f'{target.URL}{{ENTER}}', with_spaces=True)
 
-    try:
-        bot.page.get_by_role("textbox").click()
-        bot.page.get_by_role("textbox").fill("https://www.google.com")
-        dlg.type_keys('{ENTER}')
+    try:   
+        with bot.page.expect_popup() as page1_info:
+            bot.page.get_by_role("textbox").click()
+            bot.page.get_by_role("textbox").fill("excel")
+            dlg.type_keys('{ENTER}')
+            bot.page.wait_for_timeout(1000)
+            page1 = page1_info.value
+            titles = page1.eval_on_selector_all(
+                ".bili-video-card__info--tit",
+                "elements => elements.map(e => e.textContent.trim())"
+            )
+            print("<<<<<<<<<<<<<<<<<<<<     视频标题     >>>>>>>>>>>>>>>>>>>>>")
+            for t in titles:
+                print(t)
     except Exception as e:
         print(f"Error: {e}")
     
