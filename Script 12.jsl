@@ -1,0 +1,55 @@
+app_path = Substr( Get Default Directory(), 2);
+Show( app_path );
+
+database = Open(
+	app_path || "\db.jmp"
+);
+
+newdata = Open(
+	app_path || "\22.csv"
+);
+
+
+dataupdate = Data Table( database ) << Update(
+	With( Data Table( newdata ) ),
+	Match Columns( :Name = :Name )
+);
+
+dataconcat = Data Table( database ) << Concatenate(
+	Data Table( newdata ),
+	Append to first table
+);
+
+RemoveDuplicates = Function({dt},
+	colNames = dt << Get Column Names();
+	dt << New Column("_dupKey", Character);
+
+	For(i = 1, i <= N Rows(dt), i++,
+		rowKey = Char(Column(dt, colNames[1])[i]);
+		For(j = 2, j <= N Items(colNames), j++,
+			rowKey = rowKey || "|" || Char(Column(dt, colNames[j])[i]);
+		);
+		dt:_dupKey[i] = rowKey;
+	);
+
+	keys = dt:_dupKey << Get Values();
+	dt << New Column("_dupFlag", Numeric, "Nominal");
+
+	For(i = 1, i <= N Rows(dt), i++,
+		If( i != Loc(keys, keys[i])[1],
+			dt:_dupFlag[i] = 1;
+		);
+	);
+
+	dt << Select Where(:_dupFlag == 1);
+	dt << Delete Rows();
+	dt << Delete Columns({"_dupKey", "_dupFlag"});
+);
+
+
+
+RemoveDuplicates(database);
+
+database << Run Script("Sex vs. Name1");
+
+database << Save(app_path || "\db2.jmp");
