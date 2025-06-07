@@ -1,0 +1,32 @@
+app_path = Substr( Get Default Directory(), 2 );
+file_name = "\Air Traffic2 - t2.jmp";
+
+dt = Open( app_path || file_name );
+// dt = Current Data Table();
+
+RemoveDuplicates = Function({dt},
+	colNames = dt << Get Column Names();
+	summaryDT = dt << Summary( Group( colNames ), Count() );
+
+	dt << Join(
+		With( summaryDT ),
+		Merge Same Name Columns,
+		Match Flag( 0 ),
+		By Matching Columns( colNames ),
+		Drop multiples( 1, 1 ),
+		Include Nonmatches( 0, 0 ),
+		Preserve main table order( 1 ),
+		Output Table( "temp_remove_duplicates" )
+	);
+	
+	colNames = Empty();
+	Close( summaryDT, NoSave );
+	Close( dt, NoSave );
+	
+	dt = Data Table( "temp_remove_duplicates" ) << Delete Columns( " N Rows" );
+	dt << Save( app_path || file_name );
+	Return(dt)
+);
+
+dt = RemoveDuplicates(dt);
+dt << Select Rows(1);
