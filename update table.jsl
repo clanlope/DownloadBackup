@@ -1,0 +1,65 @@
+app_path = Substr( Get Default Directory(), 2 );
+file_name = "\Air Traffic2.jmp";
+
+dt = Open( app_path || file_name );
+
+
+// For JMP 12
+RemoveDuplicates = Function({dt},
+	colNames = dt << Get Column Names();
+	summaryDT = dt << Summary( Group( colNames ), Count() );
+
+	dt << Join(
+		With( summaryDT ),
+		Merge Same Name Columns,
+		Match Flag( 0 ),
+		By Matching Columns( colNames ),
+		Drop multiples( 1, 1 ),
+		Include Nonmatches( 0, 0 ),
+		Preserve main table order( 1 ),
+		Output Table( "temp_remove_duplicates" )
+	);
+	
+	colNames = Empty();
+	Close( summaryDT, NoSave );
+	// Close( dt, NoSave );
+	
+	dt = Data Table( "temp_remove_duplicates" ) << Delete Columns( " N Rows" );
+	// dt << Save( app_path || file_name );
+	Return(dt)
+);
+
+dt = RemoveDuplicates(dt);
+
+
+// For JMP 14+
+/*
+all_col = dt << Get Column Names();
+dt << Select Duplicate Rows(all_col) << Delete Rows();
+*/
+
+
+/*
+database = Open(
+	app_path || "\db.jmp"
+);
+
+newdata = Open(
+	app_path || "\22.csv"
+);
+
+dataupdate = Data Table( database ) << Update(
+	With( Data Table( newdata ) ),
+	Match Columns( :Name = :Name )
+);
+
+dataconcat = Data Table( database ) << Concatenate(
+	Data Table( newdata ),
+	Append to first table
+);
+
+database << Run Script("Sex vs. Name1");
+
+database << Save(app_path || "\db2.jmp");
+
+*/
