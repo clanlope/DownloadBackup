@@ -1,0 +1,61 @@
+Write-host "test" -Fore DarkRed
+
+$pptx_path = Join-Path $PSScriptRoot "test.pptx"
+write-host "Opening PowerPoint file: $pptx_path"
+# create a pptx object
+$PowerPoint = New-Object -ComObject PowerPoint.Application
+$Presentation = $PowerPoint.Presentations.Open($pptx_path)
+
+foreach ($s in $Presentation.Slides) {
+    Write-Host "Slide $($s.SlideIndex): $($s.Shapes.Count) shapes"
+    foreach ($shape in $s.Shapes) {
+        Write-Host "Shape: $($shape.Name), Type: $($shape.Type)"
+    }
+}
+
+$slide = $Presentation.Slides.Item(1)
+foreach ($shape in $slide.Shapes) {
+    if ($shape.Type -eq 19) {
+        Write-Host "Found a table in shape: $($shape.Name)"
+        $table = $shape.Table
+        break
+    }
+}
+$pic_path = Join-Path $PSScriptRoot "cat.png"
+$slide = $Presentation.Slides.Item(1)
+foreach ($shape in $slide.Shapes) {
+    if ($shape.Type -eq 13) {
+        Write-Host "Found a picture in shape: $($shape.Name)"
+        $slide.Shapes.AddPicture($pic_path, $false, $true,
+            $shape.Left + 50, $shape.Top + 50, $shape.Width, $shape.Height)
+        $shape.Delete()
+        break
+    }
+}
+
+Write-Host "Table has $($table.Rows.Count) rows and $($table.Columns.Count) columns"
+# iterate through the table cells
+foreach ($row in $table.Rows) {
+    foreach ($cell in $row.Cells) {
+        Write-Host "Cell: $($cell.RowIndex), $($cell.ColumnIndex) - Text: $($cell.Shape.TextFrame.TextRange.Text)"
+    }
+}
+
+#replace the table content by outer table data
+$csv_path = Join-Path $PSScriptRoot "111.csv"
+# replace the 5*4 table with the csv data
+$csv_data = Import-Csv -Path $csv_path
+
+
+$row_index = 2
+foreach ($row in $csv_data) {
+    $col_index = 1
+    foreach ($col in $row.PSObject.Properties) {
+        Write-Host "Setting cell at row $row_index, column $col_index to '$($col.Value)'"
+        $table.Cell($row_index, $col_index).Shape.TextFrame.TextRange.Text = $col.Value
+        $col_index++
+    }
+    $row_index++
+}
+
+
